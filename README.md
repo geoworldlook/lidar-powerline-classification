@@ -1,46 +1,41 @@
-# LAS Data Classification Using TensorFlow
+# Power-line point classification in airborne LiDAR
 
-## Project Description
-This project focuses on classifying point cloud data from LAS files using a TensorFlow model. By analyzing various point attributes such as intensity, coordinates, and color, we aim to automatically classify points into predefined classes. This method is particularly useful in environmental and geospatial studies for processing and understanding large sets of point cloud data efficiently.
+A neural network that finds **power-line conductor points** (ASPRS class 14, *Wire – Conductor*) in airborne LiDAR
+point clouds (LAS). Written in 2024; kept as an early example of applying deep learning to 3D geospatial data.
 
-## Technologies
-- Python 3.x
-- TensorFlow 2.x
-- laspy
-- NumPy
-- pandas (for data manipulation)
-- scikit-learn (for data scaling)
-- matplotlib & seaborn (optional, for data visualization)
+## Method
 
-## Requirements
-To successfully run the project, you will need:
-- Python installed, version 3.x
-- TensorFlow 2.x installed
-- Necessary Python libraries: laspy, NumPy, pandas, scikit-learn. Install these by running `pip install laspy numpy pandas scikit-learn`.
-- (Optionally) matplotlib and seaborn for generating visualizations of the data and results.
+- **Input features per point:** height `z`, intensity, return number, number of returns, and RGB.
+- **Target:** binary label, conductor (class 14) or not, taken from the existing classification.
+- **Model:** fully connected network (128 → 64 → dropout → sigmoid) in TensorFlow/Keras with Adam and binary cross-entropy.
+- **Imbalance handling:** early stopping on PR-AUC, which suits a rare class.
+- **Data split:** train/validation/test split with MinMax scaling.
+- **Inference:** the model scores every point, applies a 0.7 probability threshold, and exports the coordinates of detected points.
 
-## How to Run the Project
-1. Clone the repository to your local environment using `git clone <repository-url>`.
-2. Ensure all the required libraries mentioned above are installed in your Python environment.
-3. Update the script with the path to your LAS file and the TensorFlow model file path as needed.
-4. Execute the script by running: `python las_data_classification.py`.
+| File | Purpose |
+|---|---|
+| [`Model.py`](Model.py) | load LAS files, build features, train and save the model |
+| [`Model_prediction.py`](Model_prediction.py) | load a trained model, classify a LAS file, export detected points |
 
-## Project Structure
-- `las_data_classification.py` - The main script that loads LAS files, prepares data, predicts classes using a TensorFlow model, and saves the results.
-- `README.md` - Provides an overview and guide for the project.
+## Run
 
-## Results
-The script processes LAS file data to predict classes for each point, which can be utilized in various applications like urban planning, forest management, and environmental monitoring. Results are saved in text files for further analysis or visualization.
+```bash
+pip install -r requirements.txt
+python Model.py              # expects TRAIN_DATA.las and vall_small.las in the working directory
+python Model_prediction.py   # expects a saved model in ./MODEL
+```
+
+The LiDAR data are not included in the repository.
+
+## Known limitations
+
+- Features are per point only. There are no neighbourhood or geometric descriptors (linearity, local height above ground),
+  which are usually what separates wires from vegetation.
+- The prediction script refits the scaler on the new file instead of reusing the training scaler.
+- The file used for prediction was also part of the training data, so there is no independent test result.
+
+**Status:** 2024, not maintained.
 
 ## License
-This project is licensed under the MIT License - see the LICENSE file for details. This allows broad usage and modification of the code.
 
-## Author
-Dawid Sajewski email:  geo.world.look@gmail.com
-
-## Acknowledgements
-- Thanks to the contributors of the TensorFlow and laspy libraries for providing essential tools for this project.
-- Acknowledge any data sources or collaborators that significantly contributed to the project's development.
-
-## How to Contribute to the Project
-Contributions to improve the project are welcome! If you have suggestions for enhancements or encounter any bugs, please feel free to open an issue or submit a pull request on the project's repository.
+[MIT](LICENSE)
